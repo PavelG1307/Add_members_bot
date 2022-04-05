@@ -115,7 +115,7 @@ async def hello(client, message):
         for member in members_list:
             if not member.user.id in members:
                 res = await add_mem(member)
-                if res=="True":
+                if res=="True" or res=="Next":
                     # await acc.edit_message_text(id_user,id_message,"Украл " + str(count) + " подписчиков!")
                     await asyncio.sleep(60)
                 if count>=20:
