@@ -118,7 +118,7 @@ async def hello(client, message):
                 if res=="True" or res=="Next":
                     # await acc.edit_message_text(id_user,id_message,"Украл " + str(count) + " подписчиков!")
                     await asyncio.sleep(60)
-                if count>=20:
+                if count>=limit_subscribe:
                     await message.reply("Украл " + str(count) + " подписчиков!\nНа сегодня все!")
                     mode = "None"
                     return
