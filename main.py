@@ -17,8 +17,8 @@ def default_set():
     # timeout=3
     id_target_group=0
     members=[]
-    id=[18596202, 12580131]
-    hash=['fdd23e2891b948c28f95cb0e6e9cf04a','09bcadf4428d8e962f201b8e3ae186e3']
+    id=[19842645, 12580131]
+    hash=['1d70506c8a7cc9048128ca8499c84c80','09bcadf4428d8e962f201b8e3ae186e3']
 
     bot=Client(
         "bot",
