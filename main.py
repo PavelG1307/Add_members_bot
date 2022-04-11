@@ -29,8 +29,8 @@ def default_set():
 
     acc=Client(
             "acc2",
-            api_id=id[1],
-            api_hash=hash[1]
+            api_id=id[0],
+            api_hash=hash[0]
     )
 
     id_user=0
