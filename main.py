@@ -3,18 +3,22 @@ import time
 import asyncio
 from pyrogram.errors import PeerFlood, FloodWait, ChatAdminRequired
 from pyrogram.handlers import MessageHandler
+from pyrogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 import os, sys
 
 def default_set():
-    global id_targer_group, id_linked_chat, mode, count, id_target_group, bot, acc, members, work_acc, id_user, id_message, limit_subscribe
+    global id_targer_group, id_linked_chat, mode, count, id_target_group, bot, acc, members, work_acc, id_user, id_message, limit_subscribe, timeout, last_usernames
     id_targer_group=0
     id_linked_chat=0
     mode="None"
     count=0
+    last_usernames=[None, None]
+    timeout=60*5
+    # timeout=3
     id_target_group=0
     members=[]
-    id=[12580131]
-    hash=['09bcadf4428d8e962f201b8e3ae186e3']
+    id=[18596202, 12580131]
+    hash=['fdd23e2891b948c28f95cb0e6e9cf04a','09bcadf4428d8e962f201b8e3ae186e3']
 
     bot=Client(
         "bot",
@@ -24,9 +28,9 @@ def default_set():
     )
 
     acc=Client(
-            "acc1",
-            api_id=id[0],
-            api_hash=hash[0]
+            "acc2",
+            api_id=id[1],
+            api_hash=hash[1]
     )
 
     id_user=0
@@ -41,10 +45,12 @@ async def add_mem(member):
             count+=1
             print(str(count) + " подписчик:",member.user.first_name,"украден!")
             return "True"
-    except PeerFlood:
+    except PeerFlood as e:
+        print(e)
         print(acc.session_name + " заморозили, меняю аккаунт")
         return "Flood"
     except FloodWait as a:
+        print(a)
         print("Меня заморозили, жду " + str(a.x) + " сек")
         return "Flood"
     except Exception as e:
@@ -54,7 +60,8 @@ async def add_mem(member):
 
     
 async def hello(client, message):
-    global id_targer_group, id_linked_chat,count, mode, members, members_list, id_user, id_message, limit_subscribe, id_chat
+    print(message.chat.id, message.message_id)
+    global id_targer_group, id_linked_chat,count, mode, members, members_list, id_user, id_message, limit_subscribe, id_chat, timeout, last_usernames
     id_user=message.chat.id
     
     if message.text == "/restart":
@@ -65,12 +72,16 @@ async def hello(client, message):
         mode = "None"
 
     if mode == "None":
-        await message.reply("Введите username целевого канала")
+        if not last_usernames[0] is None:
+            await message.reply(text = "Введите username целевого канала", reply_markup=ReplyKeyboardMarkup([[KeyboardButton(last_usernames[0])]]))
+        else:
+            await message.reply(text = "Введите username целевого канала", reply_markup=ReplyKeyboardRemove())
         mode="TgChannel"
         return
 
     if mode == "TgChannel":
         count=0
+        last_usernames[0]=message.text
         id_targer_group=(await acc.get_chat(message.text)).id
         print(id_targer_group)
         mode = "Count"
@@ -83,15 +94,20 @@ async def hello(client, message):
         else:
             for member in my_members:
                 members.append(member.user.id)
-            await message.reply("Введите канал с аудиторей!")
+            # await message.reply("Введите канал с аудиторей!")
+            if not last_usernames[1] is None:
+                await message.reply(text = "Введите канал с аудиторей!", reply_markup=ReplyKeyboardMarkup([[KeyboardButton(last_usernames[1])]]))
+            else:
+                await message.reply(text = "Введите канал с аудиторей!", reply_markup=ReplyKeyboardRemove())
             mode = "Channel"
         return
 
     if mode == "Channel":
         try:
+            last_usernames[1]=message.text
             id_chat=(await acc.get_chat(message.text)).id
             members_list = await(acc.get_chat_members(id_chat))
-            await message.reply("Буду воровать подписчиков с канала: " + message.text)
+            await message.reply("Буду воровать подписчиков с канала: " + message.text, reply_markup=ReplyKeyboardRemove())
             await message.reply("Введите желаемый прирост подписчиков")
             mode = "Count"
             return
@@ -100,38 +116,40 @@ async def hello(client, message):
             try:
                 id_linked_chat=(await acc.get_chat(message.text)).linked_chat.id
                 members_list = await(acc.get_chat_members(id_linked_chat))
-                await message.reply("Буду воровать подписчиков со связаного канала!")
+                await message.reply("Буду воровать подписчиков со связаного канала!", reply_markup=ReplyKeyboardRemove())
                 await message.reply("Введите желаемый прирост подписчиков")
                 mode = "Count"
                 return
             except Exception:
-                await message.reply("Увы и ах, не получилось! Введите username другого канала!")
+                await message.reply("Увы и ах, не получилось! Введите username другого канала!", reply_markup=ReplyKeyboardRemove())
                 mode = "TgChannel"
                 return
 
     if mode == "Count":
         limit_subscribe=int(message.text)
-        # id_message=(await message.reply('Добавлено 0 аккаунтов')).message_id
+        id_message=(await message.reply('Украл 0 подписчиков!')).message_id
         for member in members_list:
             if not member.user.id in members:
                 res = await add_mem(member)
-                if res=="True" or res=="Next":
-                    # await acc.edit_message_text(id_user,id_message,"Украл " + str(count) + " подписчиков!")
-                    await asyncio.sleep(60)
+                # res = "True"
+                # count += 1
+                if res =="True" or res=="Next":
+                    try:
+                        await bot.edit_message_text(id_user, id_message, f"Украл {count} подписчика(-ов)")
+                    except Exception as e:
+                        print(e)
+                    await asyncio.sleep(timeout)
                 if count>=limit_subscribe:
-                    await message.reply("Украл " + str(count) + " подписчиков!\nНа сегодня все!")
+                    await message.reply(f"Всего было украдено {count} подписчика(-ов)!\nНа сегодня все!")
                     mode = "None"
                     return
                 elif res=="Flood":
                     print("Flood")
-                    await message.reply("Украл " + str(count) + " подписчиков!\nВремено заморожен!")
+                    await message.reply(f"Всего было украдено {count} подписчика(-ов)!\nВремено заморожен!")
                     mode = "None"
                     return
             else:
                 print("Уже")
-        await message.reply("Украл " + str(count) + " подписчиков!")
-        await message.reply("Введите новый канал с аудиторией\n/new_target_channel – выбрать новый целевой канал")
-        mode = "TgChannel"
         return
     
 if __name__ == "__main__":
@@ -140,6 +158,8 @@ if __name__ == "__main__":
     bot.add_handler(MessageHandler(hello)) 
     bot.start()
     acc.start()
+    
+    # print(bot.get_messages(1002363042, 291))
     print("Bot started!")
     idle()
     bot.stop()
