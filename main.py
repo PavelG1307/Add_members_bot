@@ -56,7 +56,7 @@ async def add_mem(member):
         return "Flood"
     except Exception as e:
         print(e)
-        print("Подписчик:",member.user.first_name,"не хочет вас!")
+        print("Подписчик: ",member.user.first_name," не хочет вас!")
         return "Next"
 
     
@@ -134,7 +134,10 @@ async def hello(client, message):
                 res = await add_mem(member)
                 # res = "True"
                 # count += 1
-                if res =="True" or res=="Next":
+                if res=="Next":
+                    for i in range(timeout):    
+                            await asyncio.sleep(1)
+                if res =="True":
                     try:
                         await bot.edit_message_text(id_user, id_message, f"Украл {count} подписчика(-ов)")
                     except Exception as e:
